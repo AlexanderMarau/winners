@@ -5,6 +5,9 @@
 [Ll]ib64
 [Ll]ocal
 [Ss]cripts
+app/
+blog/
+vendor/
 pyvenv.cfg
 .venv
 pip-selfcheck.json
