@@ -1,15 +1,16 @@
 
-from tornado import ioloop,web
+from tornado import ioloop, web
 
-from modules.Index import Index
-from modules.ClientsHandler import ClientsHandler
+from modules.Home import Home
+from modules.Auth import Auth
 
 import settings
+import os
 
 application = web.Application([
-    (r'/', Index),
-    (r'/index', Index),
-    (r'/api/v1/clients',ClientsHandler)
+    (r'/static/(.*)', web.StaticFileHandler, dict(path=settings.settings['static_path'])),
+    (r'/', Home),
+    (r'/login', Auth)
 ], **settings.settings)
 
 if __name__ == "__main__":
