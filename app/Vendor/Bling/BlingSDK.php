@@ -80,38 +80,39 @@ class BlingSDK{
 		// DEFINE O CONTEXTO DO ENVIO
 		$strContext = 'pedido';
 
-			// LIMPA CARACTERES DESNECESSÁRIOS NA STRING CNPJ
-			if(isset($arrayPreData['cliente']['cnpj']))
-				$arrayPreData['cliente']['cnpj'] = str_replace(array('.','-','/'), '', $arrayPreData['cliente']['cnpj']);
+		// LIMPA CARACTERES DESNECESSÁRIOS NA STRING CNPJ
+		if(isset($arrayPreData['cliente']['cnpj']))
+			$arrayPreData['cliente']['cnpj'] = str_replace(array('.','-','/'), '', $arrayPreData['cliente']['cnpj']);
 
-			// LIMPA CARACTERES DESNECESSÁRIOS NA STRING PARA INSCRIÇÃO ESTADUAL
-			if(isset($arrayPreData['cliente']['ie']))
-				$arrayPreData['cliente']['ie'] = str_replace(array('.','-','/'), '', $arrayPreData['cliente']['ie']);
+		// LIMPA CARACTERES DESNECESSÁRIOS NA STRING PARA INSCRIÇÃO ESTADUAL
+		if(isset($arrayPreData['cliente']['ie']))
+			$arrayPreData['cliente']['ie'] = str_replace(array('.','-','/'), '', $arrayPreData['cliente']['ie']);
 
-			// LIMPA CARACTERES DESNECESSÁRIOS NA STRING RG
-			if(isset($arrayPreData['cliente']['rg']))
-				$arrayPreData['cliente']['rg'] = str_replace(array('.','-','/'), '', $arrayPreData['cliente']['rg']);
+		// LIMPA CARACTERES DESNECESSÁRIOS NA STRING RG
+		if(isset($arrayPreData['cliente']['rg']))
+			$arrayPreData['cliente']['rg'] = str_replace(array('.','-','/'), '', $arrayPreData['cliente']['rg']);
 
-			// LIMPA CARACTERES DESNECESSÁRIOS NA STRING CEP
-			if(isset($arrayPreData['cliente']['cep']) && !empty($arrayPreData['cliente']['cep']))
-				$arrayPreData['cliente']['cep'] = $this->mask($arrayPreData['cliente']['cep'], '##.###-###');
+		// LIMPA CARACTERES DESNECESSÁRIOS NA STRING CEP
+		if(isset($arrayPreData['cliente']['cep']) && !empty($arrayPreData['cliente']['cep']))
+			$arrayPreData['cliente']['cep'] = $this->mask($arrayPreData['cliente']['cep'], '##.###-###');
 
 		// PRÉ-DEFINE O PARÂMETRO ANTES DA ITERAÇÃO A SEGUIR
 		$n=0;
 
-			// DEFINE UM VALOR PADRÂO EM CADA ITEM PARA O PARÂMETRO 'un' CASO NÃO SEJA INFORMADO 
-			foreach ($arrayPreData['itens'] as $arrayValue) {
-				
-				if(isset($arrayValue['un']) && !$arrayValue['un'])
-					$arrayPreData['itens'][$n]['item']['un'] = 'un';
+		// DEFINE UM VALOR PADRÂO EM CADA ITEM PARA O PARÂMETRO 'un' CASO NÃO SEJA INFORMADO 
+		foreach ($arrayPreData['itens'] as $arrayValue) {			
+			if(isset($arrayValue['un']) && !$arrayValue['un'])
+				$arrayPreData['itens'][$n]['item']['un'] = 'un';
 
-				$n++;
-
-
-			}
+			$n++;
+		}
 
 		// GERA A ARRAY PADRÃO PARA API 2 BLING
-	    $arrayData = array("apikey"=>$this->strApiKey, "xml" => rawurlencode($this->buildXml($arrayPreData, $strContext)), "gerarnfe" => $boolGerarNfe);
+	    $arrayData = array(
+	    	"apikey" => $this->strApiKey, 
+	    	"xml" => rawurlencode($this->buildXml($arrayPreData, $strContext)), 
+	    	"gerarnfe" => $boolGerarNfe
+	    );
 
 	    // EXECUTA O ENVIO DE DADOS PARA O BLING
 	    return $this->sendDataToBling($strContext, 'post', $arrayData, NULL);
@@ -276,39 +277,35 @@ class BlingSDK{
 
 		// INICIA O CURL
 		$curl_handle = curl_init();
-	
-			// SE A REQUISIÇÃO TRATAR-SE DE UM GET DE CONSULTA, PREPARA AS OPÇÕES DA URL
-			if($strAction == 'get'){
+		
+		// SE A REQUISIÇÃO TRATAR-SE DE UM GET DE CONSULTA, PREPARA AS OPÇÕES DA URL
+		if($strAction == 'get'){
+			// SE O PARÂMETRO FOR INFORMADO COMO STRING O INCLUI NA AÇÃO ENVIADA AO BLING
+			if(is_string($arrayData) && $arrayData)
+				$strOptions = '/' . $arrayData . '/' . $strResponseFormat . '&apikey=' . $this->strApiKey;
+			else 
+				$strOptions = '/' . $strResponseFormat . '&apikey=' . $this->strApiKey;
+		// SE A REQUISIÇÃO TRATAR-SE DE UM POST PREPARA AS OPÇÕES DA URL
+		}elseif($strAction == 'post'){
 
-					// SE O PARÂMETRO FOR INFORMADO COMO STRING O INCLUI NA AÇÃO ENVIADA AO BLING
-					if(is_string($arrayData) && $arrayData)
-						$strOptions = '/' . $arrayData . '/' . $strResponseFormat . '&apikey=' . $this->strApiKey;
-					else 
-						$strOptions = '/' . $strResponseFormat . '&apikey=' . $this->strApiKey;
-			
-			// SE A REQUISIÇÃO TRATAR-SE DE UM POST PREPARA AS OPÇÕES DA URL
-			}elseif($strAction == 'post'){
+			// SE A REQUISIÇÃO TEM COMO ORIGEM UM POST PREPARA OS DADOS PARA ENVIO
+			curl_setopt($curl_handle, CURLOPT_POST, count($arrayData));
+    		curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $arrayData);
 
-				// SE A REQUISIÇÃO TEM COMO ORIGEM UM POST PREPARA OS DADOS PARA ENVIO
-				curl_setopt($curl_handle, CURLOPT_POST, count($arrayData));
-	    		curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $arrayData);
+			// SE O PARÂMETRO $arrayData FOR INFORMADO SIGINIFICA QUE HÁ UM CÓDIGO DE PRODUTO
+			// E A URL PARA O POST DEVE INCLUIR O CÓDIGO DO MESMO
+			if($strItemCode)
+				$strOptions = '/' . $strItemCode;
+			else // SE O PARÂMETRO $arrayData FOR IGNORADA SIGNIFICA QUE'TRATA-SE DE UM POST DE CRIAÇÃO DE PRODUTO
+				$strOptions = NULL;
 
-				// SE O PARÂMETRO $arrayData FOR INFORMADO SIGINIFICA QUE HÁ UM CÓDIGO DE PRODUTO
-				// E A URL PARA O POST DEVE INCLUIR O CÓDIGO DO MESMO
-				if($strItemCode)
-					$strOptions = '/' . $strItemCode;
-				else // SE O PARÂMETRO $arrayData FOR IGNORADA SIGNIFICA QUE'TRATA-SE DE UM POST DE CRIAÇÃO DE PRODUTO
-					$strOptions = NULL;
+		// SE A REQUISIÇÃO TRATAR-SE DE UM DELETE PREPARA AS OPÇÕES DA URL
+		}elseif($strAction == 'delete'){
+			$strOptions = '/' . $arrayData . '/' . $strResponseFormat;
 
-			// SE A REQUISIÇÃO TRATAR-SE DE UM DELETE PREPARA AS OPÇÕES DA URL
-			}elseif($strAction == 'delete'){
-
-				$strOptions = '/' . $arrayData . '/' . $strResponseFormat;
-
-				curl_setopt($curl_handle, CURLOPT_CUSTOMREQUEST, 'DELETE');
-    			curl_setopt($curl_handle, CURLOPT_POSTFIELDS, array('apikey'=>$this->strApiKey));
-
-			}
+			curl_setopt($curl_handle, CURLOPT_CUSTOMREQUEST, 'DELETE');
+			curl_setopt($curl_handle, CURLOPT_POSTFIELDS, array('apikey'=>$this->strApiKey));
+		}
 
 		// DEFINE A URL DE AÇÃO
 		curl_setopt($curl_handle, CURLOPT_URL, $this->strBlingUrl . '/'. $strContext . $strOptions);
@@ -318,7 +315,7 @@ class BlingSDK{
 
 	    // EXECUTA O ENVIO
 	    $response = curl_exec($curl_handle);
-
+	    var_dump($response);exit;
 	    // FECHA A CONEXÃO
 	    curl_close($curl_handle);
 
@@ -371,7 +368,6 @@ class BlingSDK{
 
         // RETORNA O XML
         return $xml->asXML();
-
     }
 
     /**

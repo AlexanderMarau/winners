@@ -8,7 +8,7 @@ require_once(APP . 'Vendor/Bling/BlingSDK.php');
 class BlingController extends AppController
 {
 	
-	protected $apiBling = new BlingSDK;
+	protected $apiBling;
 
 	public function configuracoes()
 	{
@@ -49,9 +49,27 @@ class BlingController extends AppController
 
 	public function enviar_venda_para_bling($id) 
 	{
-		$this->apiBling->apiKey = "5c0589b616596049ee9ea9ac42670cabc11e0342";
+		$this->apiBling = new BlingSDK;
 
-		$this->apiBling->postOrder($data, false);
+		$this->apiBling->strApiKey = "5c0589b616596049ee9ea9ac42670cabc11e0342";
+
+		$data = [
+			'cliente' => [
+				'nome' => 'Reginaldo Junior'
+			],
+			'transporte' => [],
+			'itens' => [
+				'item' => [
+					'codigo' => 1,
+					'descricao' => 'teste'
+				]
+			]
+		];
+
+		$response = $this->apiBling->postOrder($data, false);
+
+		var_dump($response);
+		exit;
 	}
 
 }
